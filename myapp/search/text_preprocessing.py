@@ -7,7 +7,8 @@ from nltk.stem import SnowballStemmer
 
 from myapp.search.objects import Document
 
-#Decided to seperate all preprocessing functions into a separate file to make it easier to read, also for separation for par1 of the project
+#Decided to seperate all preprocessing functions into a separate file to make it easier to read
+#also for separation for par1 of the project
 def _load_stop_words() -> set[str]:
     try:
         return set(stopwords.words("english"))

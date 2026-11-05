@@ -33,7 +33,7 @@ def clean_text(text):
     
     return cleaned_tokens
 
-
+#the load_data function is not really relevant for this one becouse of the template 
 def load_data(file_path):
     """
     Loads JSON data, preserves all metadata fields, and creates a merged search text.
