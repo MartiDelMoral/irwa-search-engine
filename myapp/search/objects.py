@@ -1,4 +1,4 @@
-from pydantic import BaseModel, field_validator
+from pydantic import BaseModel, Field, field_validator
 from typing import Optional, List, Dict, Any
 from datetime import datetime
 import re
@@ -21,6 +21,7 @@ class Document(BaseModel):
     average_rating: Optional[float] = None
     url: Optional[str] = None
     images: Optional[List[str]] = None
+    processed_fields: Dict[str, List[str]] = Field(default_factory=dict, exclude=True)
 
     def to_json(self):
         return self.model_dump_json()

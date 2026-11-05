@@ -1,10 +1,11 @@
 import pandas as pd
 
 from myapp.search.objects import Document
-from typing import List, Dict
+from myapp.search.text_preprocessing import preprocess_document
+from typing import Dict
 
 
-def load_corpus(path) -> List[Document]:
+def load_corpus(path) -> Dict[str, Document]:
     """
     Load file and transform to dictionary with each document as an object for easier treatment when needed for displaying
      in results, stats, etc.
@@ -24,6 +25,6 @@ def _build_corpus(df: pd.DataFrame) -> Dict[str, Document]:
     corpus = {}
     for _, row in df.iterrows():
         doc = Document(**row.to_dict())
+        doc = doc.model_copy(update={"processed_fields": preprocess_document(doc)})
         corpus[doc.pid] = doc
     return corpus
-

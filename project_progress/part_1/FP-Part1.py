@@ -6,6 +6,9 @@ import nltk
 from nltk.corpus import stopwords
 from nltk.stem import SnowballStemmer
 
+
+#NOT INCLUDED IN THE PROJECT, REMEMNANT OF WRONG AND TEMPLATELESS APPROACH FOR PART 1 THAT HAS BEEN REIMAGINED INSIDE THE TEMPLATE
+
 # Download required NLTK resources once
 nltk.download('stopwords', quiet=True)
 
