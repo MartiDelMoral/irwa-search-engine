@@ -90,25 +90,64 @@ Enjoy!
 
 
 ## Starting the Web App
-```bash
-python -V
-# Make sure we use Python 3
-
-cd search-engine-web-app
+From the repository root, activate your virtual environment as described above,
+then start Flask:
+```powershell
 python web_app.py
 ```
-The above will start a web server with the application:
+The app starts at:
 ```
- * Serving Flask app 'web-app' (lazy loading)
- * Environment: production
-   WARNING: This is a development server. Do not use it in a production deployment.
-   Use a production WSGI server instead.
- * Debug mode: off
- * Running on http://127.0.0.1:8088/ (Press CTRL+C to quit)
+http://localhost:8088/
 ```
 
-Open Web app in your Browser:  
-[http://127.0.0.1:8088/](http://127.0.0.1:8088/) or [http://localhost:8088/](http://localhost:8088/)
+Choose a ranking method on the home page and enter a query. All four options
+first require every cleaned query term to occur in a product (AND semantics).
+Word2Vec trains on the product corpus the first time that option is used.
+The search page works without a Groq API key; only its optional generated
+summary needs that service.
+
+## Part 3: Ranking experiments
+
+The search form lets you compare the following rankers on the same query:
+
+| Method | How it ranks | Strengths | Limitations |
+| --- | --- | --- | --- |
+| TF-IDF cosine | Cosine similarity between query and product TF-IDF vectors. | Familiar, fast, and rewards informative terms. | Term-frequency saturation is not modeled; long product text can dilute its score. |
+| BM25 | Okapi BM25 with `k1=1.5` and `b=0.75`, including document-length normalization. | Usually handles repeated terms and long documents better than basic TF-IDF. | `k1` and `b` are tunable; it uses exact terms and is not semantic. |
+| Custom product score | `0.70 × normalized BM25 + 0.15 × rating/5 + 0.10 × discount/100 + 0.05 × in-stock`. | Combines text relevance with product quality and purchase availability. | The weights are hand chosen; popularity/rating can bias results, and missing values contribute zero. |
+| Word2Vec cosine | Cosine similarity between averaged query and product word vectors. | Can capture some contextual similarity between words. | Vectors are trained on this corpus; rare or weakly related words may have poor vectors. AND matching still requires every query term literally. |
+
+The custom score clamps rating to 0–5 and discount to 0–100 before
+normalization. A missing numeric value contributes zero. The ranking method can
+be changed in the home-page selector without changing the query.
+
+TF-IDF and BM25 return the same candidate set because both use AND matching,
+but can order those products differently. TF-IDF cosine uses raw term counts
+weighted by IDF and normalizes by vector length. BM25 instead has diminishing
+returns for repeated terms and adjusts document length relative to the corpus
+average. Neither method understands synonyms.
+
+To print the top 20 products for each of the five Part 2 queries using all four
+methods, run this from the repository root:
+
+```powershell
+python -m myapp.search.run_part3
+```
+
+Word2Vec vectors use the mean of each product's processed word vectors, just
+like the query vector uses the mean of its processed word vectors. Training is
+deterministic and happens once per search-engine instance.
+
+To compare the evaluation metrics on the supplied validation queries and
+judgments, run:
+
+```powershell
+python -m myapp.search.evaluation
+```
+
+This prints Precision, Recall, Average Precision, F1, NDCG, MAP, and MRR for
+each method. Use the same queries and labels across methods when comparing
+their scores.
 
 
 ## Creating your own GitHub repo

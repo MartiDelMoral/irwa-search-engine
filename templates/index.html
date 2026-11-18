@@ -8,6 +8,12 @@
         <form class="d-flex" method="POST" onSubmit='return validate();' action="/search">
             <input class="form-control me-2" name="search-query" type="search" placeholder="Search" aria-label="Search"
                    autofocus="autofocus">
+            <select class="form-control me-2" name="ranking-method" aria-label="Ranking method">
+                <option value="tfidf">TF-IDF cosine</option>
+                <option value="bm25">BM25</option>
+                <option value="custom">Custom product score</option>
+                <option value="word2vec">Word2Vec cosine</option>
+            </select>
             <button class="btn btn-primary" type="submit" onclick='this.form.submit();'>Search</button>
             <input name="upf-irwa-hidden" type="hidden" value="123">
         </form>

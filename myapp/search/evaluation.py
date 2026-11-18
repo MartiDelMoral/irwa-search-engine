@@ -3,7 +3,16 @@ import math
 from pathlib import Path
 from typing import Mapping
 
-from myapp.search.algorithms import build_inverted_index, search_tfidf
+from myapp.search.algorithms import (
+    RANKING_METHODS,
+    build_inverted_index,
+    build_tfidf_document_norms,
+    search_bm25,
+    search_custom,
+    search_tfidf,
+    search_word2vec,
+    train_word2vec,
+)
 from myapp.search.objects import Document
 
 VALIDATION_QUERIES = {
@@ -94,16 +103,41 @@ def evaluate(
     labels: Mapping[str, Mapping[str, int]],
     corpus: dict[str, Document],
     ks: tuple[int, ...] = (5, 10),
+    ranking_method: str = "tfidf",
 ) -> dict[str, dict[str, float]]:
-    """Evaluate full TF-IDF rankings against the supplied judgments."""
+    """Evaluate a full ranking method against the supplied judgments."""
+    if ranking_method not in RANKING_METHODS:
+        raise ValueError(f"Unknown ranking method: {ranking_method}")
+
     index, document_lengths = build_inverted_index(corpus)
+    document_norms = (
+        build_tfidf_document_norms(index, len(corpus))
+        if ranking_method == "tfidf"
+        else None
+    )
+    word2vec_model, word2vec_vectors = (
+        train_word2vec(corpus) if ranking_method == "word2vec" else (None, {})
+    )
     results = {}
 
     for query_id, query in queries.items():
         judged = labels.get(query_id, {})
-        ranking = search_tfidf(
-            query, corpus, index, document_lengths, conjunctive=True
-        )
+        if ranking_method == "tfidf":
+            ranking = search_tfidf(
+                query,
+                corpus,
+                index,
+                document_lengths,
+                document_norms=document_norms,
+            )
+        elif ranking_method == "bm25":
+            ranking = search_bm25(query, corpus, index, document_lengths)
+        elif ranking_method == "custom":
+            ranking = search_custom(query, corpus, index, document_lengths)
+        else:
+            ranking = search_word2vec(
+                query, index, word2vec_model, word2vec_vectors, limit=None
+            )
         # Unjudged documents count as non-relevant without changing their rank.
         relevances = [judged.get(pid, 0) for pid, _ in ranking]
         total_relevant = sum(judged.values())
@@ -177,6 +211,13 @@ if __name__ == "__main__":
 
     validation_corpus = load_corpus(corpus_path)
     validation_labels = load_labels(labels_path)
-    _print_numeric_results(
-        evaluate(VALIDATION_QUERIES, validation_labels, validation_corpus)
-    )
+    for ranking_method in RANKING_METHODS:
+        print(f"\nRanking method: {ranking_method}")
+        _print_numeric_results(
+            evaluate(
+                VALIDATION_QUERIES,
+                validation_labels,
+                validation_corpus,
+                ranking_method=ranking_method,
+            )
+        )

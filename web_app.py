@@ -2,12 +2,13 @@ import os
 from json import JSONEncoder
 
 import httpagentparser  # for getting the user agent as json
-from flask import Flask, render_template, session
+from flask import Flask, abort, render_template, session
 from flask import request
 
 from myapp.analytics.analytics_data import AnalyticsData, ClickedDoc
 from myapp.search.load_corpus import load_corpus
 from myapp.search.objects import Document, StatsDocument
+from myapp.search.algorithms import RANKING_METHODS
 from myapp.search.search_engine import SearchEngine
 from myapp.generation.rag import RAGGenerator
 from dotenv import load_dotenv
@@ -67,14 +68,18 @@ def index():
 
 @app.route('/search', methods=['POST'])
 def search_form_post():
-    
-    search_query = request.form['search-query']
+    search_query = request.form.get("search-query", "")
+    ranking_method = request.form.get("ranking-method", "tfidf")
+    if ranking_method not in RANKING_METHODS:
+        abort(400, description="Unknown ranking method.")
 
     session['last_search_query'] = search_query
 
     search_id = analytics_data.save_query_terms(search_query)
 
-    results = search_engine.search(search_query, search_id, corpus)
+    results = search_engine.search(
+        search_query, search_id, corpus, ranking_method=ranking_method
+    )
 
     # generate RAG response based on user query and retrieved results
     rag_response = rag_generator.generate_response(search_query, results)
@@ -85,7 +90,14 @@ def search_form_post():
 
     print(session)
 
-    return render_template('results.html', results_list=results, page_title="Results", found_counter=found_count, rag_response=rag_response)
+    return render_template(
+        'results.html',
+        results_list=results,
+        page_title="Results",
+        found_counter=found_count,
+        rag_response=rag_response,
+        ranking_method=ranking_method,
+    )
 
 
 @app.route('/doc_details', methods=['GET'])
