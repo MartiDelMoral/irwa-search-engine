@@ -23,14 +23,26 @@ def _load_stop_words() -> set[str]:
 
 STOP_WORDS = _load_stop_words()
 STEMMER = SnowballStemmer("english")
+# Handle irregular plurals that Snowball does not normalize.
+IRREGULAR_PLURALS = {
+    "women": "woman",
+    "men": "man",
+    "children": "child",
+}
 
 
 def clean_text(text: Optional[str]) -> list[str]:
     if not text:
         return []
 
-    tokens = re.findall(r"\b[a-zA-Z0-9]+\b", text.lower())
-    return [STEMMER.stem(token) for token in tokens if token not in STOP_WORDS]
+    # Keep Unicode characters such as ñ and accented letters.
+    tokens = re.findall(r"[^\W_]+", text.lower())
+
+    return [
+        STEMMER.stem(IRREGULAR_PLURALS.get(token, token))
+        for token in tokens
+        if token not in STOP_WORDS
+    ]
 
 
 def _text_values(value: Any) -> Iterator[str]:
